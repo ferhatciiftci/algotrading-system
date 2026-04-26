@@ -54,6 +54,9 @@ strategy:
     tp_pct:        0.050
     trail_pct:     0.015
 
+    # ── Onay modu ─────────────────────────────────────────────────────────
+    # strict: EMA+RSI+MACD+ADX | balanced: EMA+RSI+(MACD veya ADX) | loose: EMA+RSI
+    confirmation_mode: "balanced"
     # ── Diğer ─────────────────────────────────────────────────────────────
     allow_short:   false
     cooldown_bars: 3

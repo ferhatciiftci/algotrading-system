@@ -207,6 +207,9 @@ def _run_single(
             sp[k] = v
         elif k in _risk_params:
             rk[k] = v
+    # confirmation_mode config'dan taşı (grid ile değiştirilmiyorsa)
+    if "confirmation_mode" not in params:
+        sp.setdefault("confirmation_mode", cfg.get("strategy",{}).get("params",{}).get("confirmation_mode","balanced"))
 
     symbol  = bt["symbols"][0]
     start   = datetime.fromisoformat(bt["start"]).replace(tzinfo=UTC)

@@ -182,8 +182,9 @@ def run_backtest(cfg: dict, config_path: str = "algotrading/config/default.yaml"
             sl_pct        = float(sp.get("sl_pct",      0.025)),
             tp_pct        = float(sp.get("tp_pct",      0.050)),
             trail_pct     = float(sp.get("trail_pct",   0.015)),
-            allow_short   = bool(sp.get("allow_short",  False)),
-            cooldown_bars = int(sp.get("cooldown_bars",  3)),
+            allow_short       = bool(sp.get("allow_short",  False)),
+            cooldown_bars     = int(sp.get("cooldown_bars",  3)),
+            confirmation_mode = str(sp.get("confirmation_mode", "balanced")),
         )
         logger.info("Strateji: MultiIndicatorStrategy (EMA+RSI+MACD+ADX+SL/TP/Trailing)")
     else:

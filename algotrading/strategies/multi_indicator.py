@@ -218,6 +218,8 @@ class MultiIndicatorStrategy(BaseStrategy):
         sl_pct         : float = 0.025,   # %2.5 stop-loss (0 = devre dışı)
         tp_pct         : float = 0.05,    # %5 take-profit (0 = devre dışı)
         trail_pct      : float = 0.015,   # %1.5 trailing stop (0 = devre dışı)
+        # Onay modu: strict | balanced | loose
+        confirmation_mode: str  = "balanced",
         # Diğer
         allow_short    : bool  = False,
         cooldown_bars  : int   = 3,
@@ -241,6 +243,7 @@ class MultiIndicatorStrategy(BaseStrategy):
         self.trail_pct    = trail_pct
         self.allow_short  = allow_short
         self.cooldown_bars= cooldown_bars
+        self.confirmation_mode = confirmation_mode.lower().strip()
 
         # Pozisyon takip durumu
         self._position    : Optional[Direction] = None
@@ -313,21 +316,28 @@ class MultiIndicatorStrategy(BaseStrategy):
             if high_vol:
                 return None
 
-            # LONG koşulları
-            long_cond = (
-                ema_f > ema_s and
-                rsi_v < self.rsi_buy and
-                (not macd_ok or ml > ms_) and
-                adx_ok
-            )
-            # SHORT koşulları
-            short_cond = (
-                self.allow_short and
-                ema_f < ema_s and
-                rsi_v > self.rsi_sell and
-                (not macd_ok or ml < ms_) and
-                adx_ok
-            )
+            # Onay moduna göre giriş koşulları
+            _mode = self.confirmation_mode
+            if _mode == "strict":
+                # Tüm filtreler zorunlu
+                long_cond  = (ema_f > ema_s and rsi_v < self.rsi_buy
+                              and macd_ok and ml > ms_ and adx_ok)
+                short_cond = (self.allow_short and ema_f < ema_s
+                              and rsi_v > self.rsi_sell
+                              and macd_ok and ml < ms_ and adx_ok)
+            elif _mode == "loose":
+                # Sadece EMA + RSI yeterli
+                long_cond  = (ema_f > ema_s and rsi_v < (self.rsi_buy + 5))
+                short_cond = (self.allow_short and ema_f < ema_s
+                              and rsi_v > (self.rsi_sell - 5))
+            else:
+                # balanced (varsayılan): EMA + RSI + MACD veya ADX
+                macd_bull = macd_ok and ml > ms_
+                long_cond  = (ema_f > ema_s and rsi_v < self.rsi_buy
+                              and (macd_bull or adx_ok))
+                short_cond = (self.allow_short and ema_f < ema_s
+                              and rsi_v > self.rsi_sell
+                              and (not macd_ok or ml < ms_) and adx_ok)
 
             if long_cond:
                 confidence = self._confidence(ema_f, ema_s, rsi_v, self.rsi_buy)
