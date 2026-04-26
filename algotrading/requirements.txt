@@ -1,0 +1,29 @@
+# ── Core numerical / data ──────────────────────────────────────────────────────
+numpy>=1.26
+pandas>=2.2
+pyarrow>=15.0          # Parquet I/O (zorunlu: veri indirme ve backtest için)
+
+# ── Statistics / quant ────────────────────────────────────────────────────────
+scipy>=1.13
+statsmodels>=0.14
+
+# ── Config ────────────────────────────────────────────────────────────────────
+pyyaml>=6.0
+
+# ── Veri bağlayıcıları ─────────────────────────────────────────────────────────
+yfinance>=0.2.40       # Yahoo Finance (hisse, ETF)
+requests>=2.31         # Binance connector için
+
+# ── Dashboard (görselleştirme) ────────────────────────────────────────────────
+streamlit>=1.35        # Türkçe backtest paneli
+plotly>=5.22           # Interaktif grafikler
+
+# ── Validation / schema ───────────────────────────────────────────────────────
+pydantic>=2.7
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+rich>=13.7
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=8.2
+pytest-cov>=5.0
