@@ -108,6 +108,7 @@ def run_backtest(cfg: dict, config_path: str = "algotrading/config/default.yaml"
     from algotrading.risk.position_sizer  import FixedFractional
     from algotrading.risk.risk_manager    import RiskManager
     from algotrading.strategies.trend_volatility import TrendVolatilityStrategy
+    from algotrading.strategies.multi_indicator  import MultiIndicatorStrategy
     from algotrading.validation.metrics   import compute_metrics, compute_trade_metrics
 
     # ── Veri deposu ───────────────────────────────────────────────────────────
@@ -158,16 +159,44 @@ def run_backtest(cfg: dict, config_path: str = "algotrading/config/default.yaml"
     bus       = EventBus()
     portfolio = Portfolio(initial_capital=bc.initial_capital)
 
-    sp = cfg["strategy"]["params"]
-    strategy = TrendVolatilityStrategy(
-        data_handler  = data_handler,
-        bus           = bus,
-        symbol        = symbols[0],
-        ema_fast      = sp["ema_fast"],
-        ema_slow      = sp["ema_slow"],
-        atr_period    = sp["atr_period"],
-        vol_threshold = sp["vol_threshold"],
-    )
+    sp           = cfg["strategy"]["params"]
+    strategy_id  = cfg["strategy"].get("id", "trend_volatility_v1")
+
+    if strategy_id == "multi_indicator_v1":
+        strategy = MultiIndicatorStrategy(
+            data_handler  = data_handler,
+            bus           = bus,
+            symbol        = symbols[0],
+            ema_fast      = int(sp.get("ema_fast",      12)),
+            ema_slow      = int(sp.get("ema_slow",      26)),
+            rsi_period    = int(sp.get("rsi_period",    14)),
+            rsi_buy       = float(sp.get("rsi_buy",     55.0)),
+            rsi_sell      = float(sp.get("rsi_sell",    45.0)),
+            macd_fast     = int(sp.get("macd_fast",     12)),
+            macd_slow     = int(sp.get("macd_slow",     26)),
+            macd_signal   = int(sp.get("macd_signal",    9)),
+            adx_period    = int(sp.get("adx_period",    14)),
+            adx_threshold = float(sp.get("adx_threshold", 20.0)),
+            atr_period    = int(sp.get("atr_period",    14)),
+            vol_threshold = float(sp.get("vol_threshold", 0.035)),
+            sl_pct        = float(sp.get("sl_pct",      0.025)),
+            tp_pct        = float(sp.get("tp_pct",      0.050)),
+            trail_pct     = float(sp.get("trail_pct",   0.015)),
+            allow_short   = bool(sp.get("allow_short",  False)),
+            cooldown_bars = int(sp.get("cooldown_bars",  3)),
+        )
+        logger.info("Strateji: MultiIndicatorStrategy (EMA+RSI+MACD+ADX+SL/TP/Trailing)")
+    else:
+        strategy = TrendVolatilityStrategy(
+            data_handler  = data_handler,
+            bus           = bus,
+            symbol        = symbols[0],
+            ema_fast      = int(sp.get("ema_fast",      20)),
+            ema_slow      = int(sp.get("ema_slow",      50)),
+            atr_period    = int(sp.get("atr_period",    14)),
+            vol_threshold = float(sp.get("vol_threshold", 0.025)),
+        )
+        logger.info("Strateji: TrendVolatilityStrategy (EMA+ATR)")
 
     oc = cfg["orchestrator"]
     orchestrator = Orchestrator(

@@ -5,18 +5,15 @@
 
 system:
   name: "algotrading_mvp"
-  version: "0.1.0"
+  version: "0.2.0"
   env: "backtest"            # backtest | paper  (live desteklenmiyor)
   log_level: "INFO"
   random_seed: 42
 
 data:
-  # Veri deposunun kök dizini.
-  # Hem download.py hem main.py bu yolu kullanır.
-  # run_backtest.py'den çalıştırıldığında proje kökü baz alınır.
   root_dir: "data"
-  window_size: 500           # sembol başına döngüsel bar tamponu
-  bars_per_year: 252         # yıllıklaştırma için
+  window_size: 500
+  bars_per_year: 252
 
 backtest:
   initial_capital: 100000.0
@@ -25,13 +22,41 @@ backtest:
   start: "2020-01-01"
   end:   "2024-01-01"
 
+# ── Strateji Konfigürasyonu ───────────────────────────────────────────────────
+# id: "trend_volatility_v1"  → EMA çaprazlama + ATR volatilite filtresi
+# id: "multi_indicator_v1"   → EMA + RSI + MACD + ADX + dahili SL/TP/trailing
 strategy:
-  id: "trend_volatility_v1"
+  id: "multi_indicator_v1"
+
   params:
-    ema_fast: 20
-    ema_slow: 50
-    atr_period: 14
-    vol_threshold: 0.025     # normalise ATR filtresi
+    # ── EMA (her iki strateji) ─────────────────────────────────────────────
+    ema_fast:      12
+    ema_slow:      26
+    atr_period:    14
+    vol_threshold: 0.035
+
+    # ── RSI ───────────────────────────────────────────────────────────────
+    rsi_period:    14
+    rsi_buy:       55.0
+    rsi_sell:      45.0
+
+    # ── MACD ──────────────────────────────────────────────────────────────
+    macd_fast:     12
+    macd_slow:     26
+    macd_signal:   9
+
+    # ── ADX ───────────────────────────────────────────────────────────────
+    adx_period:    14
+    adx_threshold: 20.0
+
+    # ── Stop-Loss / Take-Profit / Trailing ────────────────────────────────
+    sl_pct:        0.025
+    tp_pct:        0.050
+    trail_pct:     0.015
+
+    # ── Diğer ─────────────────────────────────────────────────────────────
+    allow_short:   false
+    cooldown_bars: 3
 
 commission:
   model: "fixed_per_share"
@@ -45,22 +70,22 @@ slippage:
 
 risk:
   position_sizer: "fixed_fractional"
-  max_risk_pct: 0.01                   # işlem başına özkaynak %1
+  max_risk_pct: 0.01
   atr_stop_mult: 2.0
-  max_position_pct: 0.10               # sembol başına özkaynak maks %10
+  max_position_pct: 0.10
   max_gross_exposure: 0.95
   max_net_exposure: 0.80
   atr_period: 14
 
 kill_switch:
-  max_daily_loss_pct: 0.03             # günlük %3 kayıp limiti
-  max_drawdown_pct: 0.10               # tepeden %10 düşüş
+  max_daily_loss_pct: 0.03
+  max_drawdown_pct: 0.10
   max_consecutive_losses: 5
 
 orchestrator:
   cooldown_bars: 3
   min_confidence: 0.0
-  allow_short: true
+  allow_short: false
 
 validation:
   walk_forward:
@@ -83,4 +108,4 @@ learning:
   sandbox_dir: "sandbox_output"
   canary_allocation_pct: 0.10
   canary_min_days: 10
-  require_human_approval: true         # ÜRETİMDE ASLA false YAPILMAMALI
+  require_human_approval: true

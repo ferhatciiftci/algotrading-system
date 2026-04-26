@@ -180,6 +180,7 @@ def _run_single(
     from algotrading.risk.position_sizer  import FixedFractional
     from algotrading.risk.risk_manager    import RiskManager
     from algotrading.strategies.trend_volatility import TrendVolatilityStrategy
+    from algotrading.strategies.multi_indicator  import MultiIndicatorStrategy
     from algotrading.validation.metrics   import compute_metrics, compute_trade_metrics
 
     cfg = copy.deepcopy(cfg_base)
@@ -192,10 +193,19 @@ def _run_single(
     oc  = cfg["orchestrator"]
 
     # Parametre enjeksiyonu
+    _strategy_params = {
+        "ema_fast","ema_slow","atr_period","vol_threshold",
+        "rsi_period","rsi_buy","rsi_sell",
+        "macd_fast","macd_slow","macd_signal",
+        "adx_period","adx_threshold",
+        "sl_pct","tp_pct","trail_pct",
+        "allow_short","cooldown_bars",
+    }
+    _risk_params = {"max_risk_pct","max_position_pct","atr_stop_mult"}
     for k, v in params.items():
-        if k in ("ema_fast","ema_slow","atr_period","vol_threshold"):
+        if k in _strategy_params:
             sp[k] = v
-        elif k in ("max_risk_pct","max_position_pct","atr_stop_mult"):
+        elif k in _risk_params:
             rk[k] = v
 
     symbol  = bt["symbols"][0]
@@ -206,15 +216,40 @@ def _run_single(
     bus       = EventBus()
     portfolio = Portfolio(initial_capital=capital)
 
-    strategy = TrendVolatilityStrategy(
-        data_handler  = data_handler,
-        bus           = bus,
-        symbol        = symbol,
-        ema_fast      = int(sp["ema_fast"]),
-        ema_slow      = int(sp["ema_slow"]),
-        atr_period    = int(sp["atr_period"]),
-        vol_threshold = float(sp["vol_threshold"]),
-    )
+    strategy_id = cfg["strategy"].get("id", "trend_volatility_v1")
+    if strategy_id == "multi_indicator_v1":
+        strategy = MultiIndicatorStrategy(
+            data_handler  = data_handler,
+            bus           = bus,
+            symbol        = symbol,
+            ema_fast      = int(sp.get("ema_fast",      12)),
+            ema_slow      = int(sp.get("ema_slow",      26)),
+            rsi_period    = int(sp.get("rsi_period",    14)),
+            rsi_buy       = float(sp.get("rsi_buy",     55.0)),
+            rsi_sell      = float(sp.get("rsi_sell",    45.0)),
+            macd_fast     = int(sp.get("macd_fast",     12)),
+            macd_slow     = int(sp.get("macd_slow",     26)),
+            macd_signal   = int(sp.get("macd_signal",    9)),
+            adx_period    = int(sp.get("adx_period",    14)),
+            adx_threshold = float(sp.get("adx_threshold", 20.0)),
+            atr_period    = int(sp.get("atr_period",    14)),
+            vol_threshold = float(sp.get("vol_threshold", 0.035)),
+            sl_pct        = float(sp.get("sl_pct",      0.025)),
+            tp_pct        = float(sp.get("tp_pct",      0.050)),
+            trail_pct     = float(sp.get("trail_pct",   0.015)),
+            allow_short   = bool(sp.get("allow_short",  False)),
+            cooldown_bars = int(sp.get("cooldown_bars",  3)),
+        )
+    else:
+        strategy = TrendVolatilityStrategy(
+            data_handler  = data_handler,
+            bus           = bus,
+            symbol        = symbol,
+            ema_fast      = int(sp.get("ema_fast",      20)),
+            ema_slow      = int(sp.get("ema_slow",      50)),
+            atr_period    = int(sp.get("atr_period",    14)),
+            vol_threshold = float(sp.get("vol_threshold", 0.025)),
+        )
     orchestrator = Orchestrator(
         bus           = bus,
         cooldown_bars = int(oc.get("cooldown_bars", 3)),
